@@ -11,7 +11,7 @@
 /* ************************************************************************** */
 #include "../inc/minishell.h"
 
-int ft_check_input(char *input)
+int ft_check_quotes(char *input)
 {
 	int i;
 
@@ -43,82 +43,84 @@ int ft_check_input(char *input)
 	return(0);
 }
 
-char	**ft_add_cmd(char **cmd_list, char *cmd)
+int ft_update_stat(char c)
 {
-	static int i;
-	int	j;
-	char 	**new_cmd_list;
-
-	j = 0;
-	new_cmd_list = calloc(sizeof(char *), i + 2);
-	new_cmd_list[i] = cmd;
-	while (j < i)
-	{
-		new_cmd_list[j] = cmd_list[j];
-		j++;
-	}
-	free(cmd_list);
-	i++;
-	return(new_cmd_list);
+	static int stat;
+	
+	if (c == '\'' && stat == 0)
+		stat = 1;
+	else if (c == '\'' && stat == 1)
+		stat = 0;
+	else if (c == '"' && stat == 0)
+		stat = 2;
+	else if (c == '"' && stat == 2)
+		stat = 0;
+	return (stat);
 }
 
-char    **ft_get_all_cmd(char **cmd_list,char *input)
+t_def_char    *ft_modif_line(char *input)
 {
-	char *cmd;
+	t_def_char *line;
 	int i;
 	int j;
-	int e;
+	int stat;
 
 	i = 0;
 	j = 0;
-	e = 0;
-	while (input[i] == ' ' && input[i])
-		i++;
-	while (input[i + j] != ' ' && input[i + j])
-                j++;
-	if(j != 0)
+	while (input[i])
 	{
-		cmd = ft_calloc(sizeof(char),j + 1);
-		i +=j;
-		while(j > 0)
-		{
-			cmd[e] = input[i - j];
-			e++;
-			j--;
-		}
-		cmd_list = ft_add_cmd(cmd_list, cmd);
+		stat = ft_update_stat(input[i]);
+		if((input[i] != ' ' || stat != 0) && (input[i] != '\'' || \
+			stat == 2) && (input[i] != '"' || stat == 1))
+			j++;
+		i++;
 	}
-	if (!input[i])
-		return(cmd_list);
-	else
-		return(ft_get_all_cmd(cmd_list, input + i));
+	line = ft_calloc(sizeof(t_def_char), j + 1);
+	i = 0;
+	j = 0;
+	while (input[i])
+	{
+		stat = ft_update_stat(input[i]);
+		if((input[i] != ' ' || stat != 0) && (input[i] != '\'' || \
+			stat == 2) && (input[i] != '"' || stat == 1))
+		{
+			line[j].c = input[i];
+			line[j].quotes = stat;
+			//line[j].bool_m = ft_check_meta(line[j].c);	
+			j++;
+		}
+		i++;
+	}
+	return(line);
 }
 
-char	**ft_parce_input(char *input)
+t_def_char	*ft_parce_input(char *input)
 {
-	char **cmd_list;
+	t_def_char *line;
 
-	if (ft_check_input(input))
+	if (ft_check_quotes(input))
 		return(NULL);
-	cmd_list = ft_get_all_cmd(0, input);
-	return(cmd_list);
+	line = ft_modif_line(input);
+	return(line);
 }
 
 int main(int ac, char **av)
 {
-	char **cmd_list;
+	t_def_char *line;
 	int i;
-	
+
 	i = 0;
-	cmd_list = 0;
+	line = 0;
 	if (ac < 2)
 		return(0);
-	cmd_list = ft_parce_input(av[1]);
-	if (!cmd_list)
+	line = ft_parce_input(av[1]);
+	if (!line)
 		return(0);
-	while (cmd_list[i])
+	while (line[i].c)
 	{
-		ft_putstr_rl(cmd_list[i++]);
+		ft_putchar_fd(line[i].c, 1);
+		ft_putstr_fd("  = ",1);
+		ft_putnbr_fd(line[i++].quotes, 1);
 		write(1, "\n", 1);
 	}
 }

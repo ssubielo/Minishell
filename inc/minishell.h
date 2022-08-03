@@ -19,4 +19,11 @@
 # include <stdlib.h>
 # include "../libft/inc/libft.h"
 
+typedef struct s_def_char
+{
+	char c;
+	char quotes;
+	char bool_m;
+}		t_def_char;
+
 #endif
